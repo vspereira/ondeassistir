@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-// ── Tipos ──────────────────────────────────────────────────────────────────
 interface Channel {
   name: string;
   type: "free" | "pay" | "stream";
@@ -14,14 +13,13 @@ interface Game {
   awayTeam: string;
   league: string;
   sport: string;
-  date: string; // ISO 8601
+  date: string;
   status: "scheduled" | "live" | "finished";
   score?: string;
   channels: Channel[];
   description: string;
 }
 
-// ── Mock DB (substituir por Supabase/API depois) ───────────────────────────
 const games: Game[] = [
   {
     slug: "palmeiras-x-santos-onde-assistir",
@@ -35,8 +33,7 @@ const games: Game[] = [
       { name: "Premiere", type: "pay", url: "#" },
       { name: "Globoplay", type: "stream", url: "#" },
     ],
-    description:
-      "Clássico paulista entre Palmeiras e Santos pelo Brasileirão Série A. Veja onde assistir ao vivo e online.",
+    description: "Clássico paulista entre Palmeiras e Santos pelo Brasileirão Série A. Veja onde assistir ao vivo e online.",
   },
   {
     slug: "flamengo-x-athletico-pr-onde-assistir",
@@ -50,48 +47,42 @@ const games: Game[] = [
       { name: "SporTV", type: "pay", url: "#" },
       { name: "Globoplay", type: "stream", url: "#" },
     ],
-    description:
-      "Flamengo x Athletico-PR pela Copa do Brasil. Saiba onde assistir ao vivo na TV e streaming.",
+    description: "Flamengo x Athletico-PR pela Copa do Brasil. Saiba onde assistir ao vivo na TV e streaming.",
   },
 ];
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 function getGame(slug: string): Game | undefined {
   return games.find((g) => g.slug === slug);
 }
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
+    weekday: "long", day: "2-digit", month: "long", year: "numeric",
   });
 }
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Sao_Paulo",
+    hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
   });
 }
 
-const channelTypeLabel = { free: "TV Aberta", pay: "TV Fechada", stream: "Streaming" };
+const channelTypeLabel: Record<string, string> = {
+  free: "TV Aberta",
+  pay: "TV Fechada",
+  stream: "Streaming",
+};
 
-// ── generateStaticParams ───────────────────────────────────────────────────
 export async function generateStaticParams() {
   return games.map((g) => ({ slug: g.slug }));
 }
 
-// ── generateMetadata (SEO dinâmico por jogo) ──────────────────────────────
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
 }): Promise<Metadata> {
-  const { slug } = await params;
-  const game = getGame(slug);
+  const game = getGame(params.slug);
   if (!game) return {};
 
   const title = `${game.homeTeam} x ${game.awayTeam} — Onde Assistir Ao Vivo`;
@@ -104,7 +95,6 @@ export async function generateMetadata({
     keywords: [
       `${game.homeTeam} x ${game.awayTeam} onde assistir`,
       `${game.homeTeam} x ${game.awayTeam} ao vivo`,
-      `${game.homeTeam} x ${game.awayTeam} transmissão`,
       game.league,
       "onde assistir futebol hoje",
     ],
@@ -120,7 +110,6 @@ export async function generateMetadata({
   };
 }
 
-// ── JSON-LD Schema (SportsEvent) ───────────────────────────────────────────
 function JsonLd({ game }: { game: Game }) {
   const schema = {
     "@context": "https://schema.org",
@@ -129,22 +118,10 @@ function JsonLd({ game }: { game: Game }) {
     description: game.description,
     startDate: game.date,
     sport: game.sport,
-    league: {
-      "@type": "SportsOrganization",
-      name: game.league,
-    },
-    homeTeam: {
-      "@type": "SportsTeam",
-      name: game.homeTeam,
-    },
-    awayTeam: {
-      "@type": "SportsTeam",
-      name: game.awayTeam,
-    },
-    location: {
-      "@type": "Place",
-      name: "Brasil",
-    },
+    league: { "@type": "SportsOrganization", name: game.league },
+    homeTeam: { "@type": "SportsTeam", name: game.homeTeam },
+    awayTeam: { "@type": "SportsTeam", name: game.awayTeam },
+    location: { "@type": "Place", name: "Brasil" },
     url: `https://ondeassistir.digital/${game.slug}`,
   };
 
@@ -156,18 +133,14 @@ function JsonLd({ game }: { game: Game }) {
   );
 }
 
-// ── Page Component ─────────────────────────────────────────────────────────
-export default async function GamePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const game = getGame(slug);
+export default function GamePage({ params }: { params: { slug: string } }) {
+  const game = getGame(params.slug);
   if (!game) notFound();
 
   return (
     <>
       <JsonLd game={game} />
-
       <main className="min-h-screen bg-[#070b12] text-[#e8eaf0] px-4 py-12 max-w-2xl mx-auto">
-        {/* Breadcrumb — bom para SEO */}
         <nav className="text-sm text-[#445566] mb-6">
           <a href="/" className="hover:text-white">Início</a>
           <span className="mx-2">/</span>
@@ -176,7 +149,6 @@ export default async function GamePage({ params }: { params: Promise<{ slug: str
           <span className="text-[#8899aa]">{game.homeTeam} x {game.awayTeam}</span>
         </nav>
 
-        {/* H1 — exact match keyword */}
         <h1 className="text-3xl font-black leading-tight mb-2">
           {game.homeTeam} x {game.awayTeam}:{" "}
           <span className="text-[#ff0040]">Onde Assistir Ao Vivo</span>
@@ -186,7 +158,6 @@ export default async function GamePage({ params }: { params: Promise<{ slug: str
           {game.league} · {formatDate(game.date)} · {formatTime(game.date)}
         </p>
 
-        {/* Channels — CTA principal */}
         <section className="mb-10">
           <h2 className="text-lg font-bold mb-4 text-[#8899aa] uppercase tracking-widest text-sm">
             Onde assistir
@@ -208,7 +179,6 @@ export default async function GamePage({ params }: { params: Promise<{ slug: str
           </div>
         </section>
 
-        {/* Conteúdo SEO — texto relevante para rankear */}
         <section className="prose prose-invert max-w-none text-[#8899aa] text-sm leading-relaxed">
           <h2 className="text-white text-xl font-bold mb-3">
             Como assistir {game.homeTeam} x {game.awayTeam} ao vivo?
@@ -223,8 +193,9 @@ export default async function GamePage({ params }: { params: Promise<{ slug: str
           </p>
           <p className="mt-4">
             A transmissão ao vivo estará disponível em{" "}
-            {game.channels.map((c) => c.name).join(" e ")}. Acesse os links acima para
-            assistir online ou verifique a disponibilidade na sua operadora de TV.
+            {game.channels.map((c) => c.name).join(" e ")}. Acesse os links
+            acima para assistir online ou verifique a disponibilidade na sua
+            operadora de TV.
           </p>
         </section>
       </main>
