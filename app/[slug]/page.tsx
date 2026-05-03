@@ -88,9 +88,10 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const game = getGame(params.slug);
+  const { slug } = await params;
+  const game = getGame(slug);
   if (!game) return {};
 
   const title = `${game.homeTeam} x ${game.awayTeam} — Onde Assistir Ao Vivo`;
@@ -156,8 +157,9 @@ function JsonLd({ game }: { game: Game }) {
 }
 
 // ── Page Component ─────────────────────────────────────────────────────────
-export default function GamePage({ params }: { params: { slug: string } }) {
-  const game = getGame(params.slug);
+export default async function GamePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const game = getGame(slug);
   if (!game) notFound();
 
   return (
